@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校園大冒險 抽籤系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Noto Sans TC', '微軟正黑體', sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── 畫面切換 ── */
+        .screen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            transition: opacity 0.4s;
+        }
+        .screen.hidden { opacity: 0; pointer-events: none; }
+
+        /* ════════════════════════════
+           首頁
+        ════════════════════════════ */
+        #home-screen {
+            background: linear-gradient(145deg, #c3f0fa 0%, #fce4ec 60%, #ede7f6 100%);
+        }
+
+        .home-deco {
+            font-size: 3rem;
+            letter-spacing: 8px;
+            margin-bottom: 4px;
+        }
+
+        .home-title {
+            font-size: 2.4rem;
+            font-weight: 900;
+            color: #6a1b9a;
+            text-shadow: 3px 3px 0 #f8bbd0;
+        }
+
+        .home-sub {
+            font-size: 1rem;
+            color: #8e24aa;
+            margin-top: 6px;
+            margin-bottom: 6px;
+        }
+
+        .home-tagline {
+            font-size: 0.85rem;
+            color: #ab47bc;
+            margin-bottom: 32px;
+        }
+
+        .tube-icon {
+            font-size: 110px;
+            display: block;
+            text-align: center;
+            margin-bottom: 32px;
+            animation: tubeBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes tubeBounce {
+            0%, 100% { transform: translateY(0) rotate(-6deg); }
+            50%       { transform: translateY(-16px) rotate(6deg); }
+        }
+
+        .draw-btn {
+            font-family: inherit;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, #f857a6 0%, #ff5858 100%);
+            border: none;
+            border-radius: 50px;
+            padding: 18px 64px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(248, 87, 166, 0.45);
+            animation: btnPulse 2.2s ease-in-out infinite;
+            transition: transform 0.15s;
+        }
+
+        @keyframes btnPulse {
+            0%, 100% { transform: scale(1);    box-shadow: 0 8px 24px rgba(248,87,166,.45); }
+            50%       { transform: scale(1.06); box-shadow: 0 14px 32px rgba(248,87,166,.65); }
+        }
+
+        .draw-btn:hover  { animation: none; transform: scale(1.12); }
+        .draw-btn:active { animation: none; transform: scale(0.95); }
+
+        /* ════════════════════════════
+           集氣動畫
+        ════════════════════════════ */
+        #animation-screen {
+            background: linear-gradient(145deg, #1a1a2e 0%, #3a0060 100%);
+        }
+
+        .shaking-tube {
+            font-size: 130px;
+            display: block;
+            text-align: center;
+            animation: tubeShake 0.3s ease-in-out infinite;
+        }
+
+        @keyframes tubeShake {
+            0%   { transform: rotate(-18deg) translateY(0); }
+            25%  { transform: rotate(18deg)  translateY(-12px); }
+            50%  { transform: rotate(-12deg) translateY(6px); }
+            75%  { transform: rotate(12deg)  translateY(-6px); }
+            100% { transform: rotate(-18deg) translateY(0); }
+        }
+
+        .loading-text {
+            color: #fce4ec;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-top: 28px;
+            letter-spacing: 5px;
+        }
+
+        .loading-bar-wrap {
+            width: 220px;
+            height: 8px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            margin-top: 18px;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f857a6, #ff5858);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 2.5s linear;
+        }
+
+        /* ════════════════════════════
+           結果畫面
+        ════════════════════════════ */
+        #result-screen {
+            overflow-y: auto;
+            justify-content: flex-start;
+            padding-top: 32px;
+            padding-bottom: 32px;
+            background: linear-gradient(145deg, #c3f0fa 0%, #fce4ec 60%, #ede7f6 100%);
+            transition: background 0.6s;
+        }
+
+        #result-screen.heart-bg {
+            background: linear-gradient(145deg, #ffd6e0 0%, #ffaec9 50%, #ff85a1 100%);
+        }
+
+        .fortune-card {
+            background: white;
+            border-radius: 24px;
+            padding: 28px 24px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.14);
+            position: relative;
+            overflow: hidden;
+            animation: cardReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes cardReveal {
+            from { transform: scale(0.3) rotate(-8deg); opacity: 0; }
+            to   { transform: scale(1)   rotate(0deg);  opacity: 1; }
+        }
+
+        /* 卡片閃光 */
+        .card-shimmer {
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+            pointer-events: none;
+            animation: shimmer 0.9s ease 0.5s forwards;
+        }
+
+        @keyframes shimmer {
+            from { left: -60%; }
+            to   { left: 150%; }
+        }
+
+        /* 等級光暈 */
+        .glow-大吉 { box-shadow: 0 20px 60px rgba(255,215,0,.5), 0 0 40px rgba(255,165,0,.3); }
+        .glow-中吉 { box-shadow: 0 20px 60px rgba(255,152,0,.4); }
+        .glow-小吉 { box-shadow: 0 20px 60px rgba(76,175,80,.3); }
+        .glow-末吉 { box-shadow: 0 20px 60px rgba(100,181,246,.3); }
+
+        /* 等級徽章 */
+        .level-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 14px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .level-大吉 { background: linear-gradient(135deg,#FFD700,#FFA500); color: #4a2e00; }
+        .level-中吉 { background: linear-gradient(135deg,#FFB347,#FF9800); color: #4a2200; }
+        .level-小吉 { background: linear-gradient(135deg,#A5D6A7,#4CAF50); color: #1a3d1a; }
+        .level-末吉 { background: linear-gradient(135deg,#90CAF9,#64B5F6); color: #1a2e4a; }
+
+        /* 主題標籤 */
+        .category-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: #ede7f6;
+            color: #6a1b9a;
+            margin-left: 8px;
+            margin-bottom: 8px;
+        }
+
+        .fortune-id {
+            font-size: 0.75rem;
+            color: #bbb;
+            text-align: right;
+            margin-bottom: 10px;
+        }
+
+        /* 詩文 */
+        .poem {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #222;
+            line-height: 1.9;
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+            border-left: 4px solid #ccc;
+        }
+        .poem-大吉 { border-color: #FFD700; background: #fffde7; }
+        .poem-中吉 { border-color: #FF9800; background: #fff3e0; }
+        .poem-小吉 { border-color: #4CAF50; background: #f1f8e9; }
+        .poem-末吉 { border-color: #64B5F6; background: #e3f2fd; }
+
+        /* 解讀 */
+        .meaning {
+            font-size: 0.92rem;
+            color: #555;
+            line-height: 1.75;
+            margin-bottom: 20px;
+        }
+
+        /* 啟動能量按鈕 */
+        .activate-btn {
+            font-family: inherit;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50px;
+            padding: 14px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 6px 20px rgba(102,126,234,.4);
+        }
+        .activate-btn:hover  { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(102,126,234,.55); }
+        .activate-btn:active { transform: translateY(0); }
+
+        /* 能量指令 */
+        .action-content {
+            display: none;
+            border-radius: 14px;
+            padding: 16px;
+            margin-top: 16px;
+            font-size: 0.93rem;
+            font-weight: 500;
+            line-height: 1.75;
+            animation: slideDown 0.4s ease;
+        }
+        .action-strong { background: linear-gradient(135deg,#fff9c4,#ffe082); color: #5a3e00; }
+        .action-quest  { background: linear-gradient(135deg,#e1f5fe,#b3e5fc); color: #01579b; }
+
+        .action-label {
+            font-size: 0.82rem;
+            font-weight: 900;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 再抽 */
+        .draw-again-btn {
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #6a1b9a;
+            background: white;
+            border: 3px solid #ce93d8;
+            border-radius: 50px;
+            padding: 13px;
+            cursor: pointer;
+            margin-top: 16px;
+            max-width: 400px;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .draw-again-btn:hover { background: #f3e5f5; transform: translateY(-2px); }
+
+        /* ════════════════════════════
+           末吉怪獸
+        ════════════════════════════ */
+        .monster-wrap {
+            text-align: center;
+            margin-bottom: 14px;
+        }
+        .monster-emoji {
+            font-size: 64px;
+            display: inline-block;
+            cursor: pointer;
+            user-select: none;
+            animation: monsterSweat 0.8s ease-in-out infinite;
+            transition: transform 0.3s;
+        }
+        @keyframes monsterSweat {
+            0%, 100% { transform: rotate(-8deg); }
+            50%       { transform: rotate(8deg); }
+        }
+        .monster-emoji.warrior {
+            animation: warriorPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+        }
+        @keyframes warriorPop {
+            from { transform: scale(0.4) rotate(-20deg); }
+            to   { transform: scale(1)   rotate(0deg); }
+        }
+        .monster-hint {
+            font-size: 0.78rem;
+            color: #78909c;
+            margin-top: 4px;
+        }
+
+        /* ════════════════════════════
+           特效層
+        ════════════════════════════ */
+        #fx { position: fixed; inset: 0; pointer-events: none; z-index: 999; }
+
+        /* 彩帶 */
+        .confetti {
+            position: absolute;
+            top: -20px;
+            border-radius: 2px;
+            animation: confettiFall linear forwards;
+        }
+        @keyframes confettiFall {
+            0%   { transform: translateY(0) rotate(0deg);   opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* 愛心 */
+        .heart {
+            position: absolute;
+            top: 105vh;
+            animation: heartRise ease-in forwards;
+        }
+        @keyframes heartRise {
+            0%   { transform: translateY(0) scale(0.6); opacity: 1; }
+            100% { transform: translateY(-130vh) scale(1.4); opacity: 0; }
+        }
+
+        /* 粉紅濾鏡 */
+        .pink-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,105,180,0.12);
+            animation: pinkPulse 2s ease-in-out infinite;
+        }
+        @keyframes pinkPulse {
+            0%, 100% { opacity: 0.5; }
+            50%       { opacity: 1; }
+        }
+
+        /* 星星爆發 */
+        .star {
+            position: absolute;
+            animation: starBurst ease-out forwards;
+        }
+        @keyframes starBurst {
+            0%   { transform: translate(0,0) scale(0); opacity: 1; }
+            100% { transform: translate(var(--dx),var(--dy)) scale(1.4); opacity: 0; }
+        }
+
+        /* 綠色閃光 */
+        .sparkle {
+            position: absolute;
+            animation: sparklePop ease-out forwards;
+        }
+        @keyframes sparklePop {
+            0%   { transform: translate(0,0) scale(0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--dx),var(--dy)) scale(1.2) rotate(180deg); opacity: 0; }
+        }
+
+        /* 卡片震動 */
+        .card-shake {
+            animation: cardShake 0.5s ease;
+        }
+        @keyframes cardShake {
+            0%,100% { transform: translateX(0); }
+            20%     { transform: translateX(-10px); }
+            40%     { transform: translateX(10px); }
+            60%     { transform: translateX(-7px); }
+            80%     { transform: translateX(7px); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── 首頁 ── -->
+<div class="screen" id="home-screen">
+    <div class="home-deco">✨ 🌟 ✨</div>
+    <div class="home-title">校園大冒險</div>
+    <div class="home-sub">小學生專屬抽籤系統</div>
+    <div class="home-tagline">搖一搖，看看今天的好運！</div>
+    <span class="tube-icon">🎋</span>
+    <button class="draw-btn" onclick="startDraw()">✨ 開始抽籤 ✨</button>
+</div>
+
+<!-- ── 集氣動畫 ── -->
+<div class="screen hidden" id="animation-screen">
+    <span class="shaking-tube">🎋</span>
+    <div class="loading-text" id="loading-text">集氣中</div>
+    <div class="loading-bar-wrap">
+        <div class="loading-bar-fill" id="loading-bar"></div>
+    </div>
+</div>
+
+<!-- ── 結果畫面 ── -->
+<div class="screen hidden" id="result-screen">
+    <div class="fortune-card" id="fortune-card">
+        <div class="card-shimmer"></div>
+        <div id="monster-area"></div>
+        <div class="fortune-id" id="fortune-id"></div>
+        <div>
+            <span class="level-badge" id="level-badge"></span>
+            <span class="category-tag" id="category-tag"></span>
+        </div>
+        <div class="poem" id="poem"></div>
+        <div class="meaning" id="meaning"></div>
+        <button class="activate-btn" id="activate-btn" onclick="activateEnergy()">⚡ 啟動能量</button>
+        <div class="action-content" id="action-content">
+            <div class="action-label" id="action-label"></div>
+            <div id="action-text"></div>
+        </div>
+    </div>
+    <button class="draw-again-btn" onclick="resetToHome()">🔄 再抽一次</button>
+</div>
+
+<!-- 特效層 -->
+<div id="fx"></div>
+
+<script>
+    let fortunes = [];
+    let currentFortune = null;
+    let dotsTimer = null;
+
+    /* ── 載入籤詩資料 ── */
+    async function loadFortunes() {
+        try {
+            const res = await fetch('data/fortunes.json');
+            fortunes = await res.json();
+        } catch (e) {
+            console.error('載入籤詩失敗:', e);
+        }
+    }
+
+    /* ── 畫面切換 ── */
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    /* ── 開始抽籤 ── */
+    function startDraw() {
+        clearFx();
+        showScreen('animation-screen');
+
+        // 載入條動畫
+        const bar = document.getElementById('loading-bar');
+        bar.style.width = '0%';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            bar.style.width = '100%';
+        }));
+
+        // 跑點點動畫
+        let dotCount = 1;
+        if (dotsTimer) clearInterval(dotsTimer);
+        dotsTimer = setInterval(() => {
+            dotCount = dotCount >= 3 ? 1 : dotCount + 1;
+            document.getElementById('loading-text').textContent = '集氣中' + '．'.repeat(dotCount);
+        }, 400);
+
+        // 隨機抽籤
+        const id = Math.floor(Math.random() * 60) + 1;
+        currentFortune = fortunes.find(f => f.id === id);
+
+        setTimeout(() => {
+            clearInterval(dotsTimer);
+            showResult(currentFortune);
+        }, 2700);
+    }
+
+    /* ── 顯示結果 ── */
+    function showResult(f) {
+        // 填入卡片內容
+        document.getElementById('fortune-id').textContent = `# ${String(f.id).padStart(2, '0')}`;
+
+        const badge = document.getElementById('level-badge');
+        badge.textContent = LEVEL_TEXT[f.level];
+        badge.className = `level-badge level-${f.level}`;
+
+        const cat = document.getElementById('category-tag');
+        cat.textContent = CAT_TEXT[f.category];
+
+        const poem = document.getElementById('poem');
+        poem.textContent = f.poem;
+        poem.className = `poem poem-${f.level}`;
+
+        document.getElementById('meaning').textContent = f.meaning;
+
+        // 重置能量區塊
+        document.getElementById('activate-btn').style.display = 'block';
+        const ac = document.getElementById('action-content');
+        ac.style.display = 'none';
+        ac.className = 'action-content';
+
+        // 末吉怪獸
+        const monsterArea = document.getElementById('monster-area');
+        if (f.level === '末吉') {
+            monsterArea.innerHTML = `
+                <div class="monster-wrap">
+                    <span class="monster-emoji" id="monster" onclick="transformMonster()">😰</span>
+                    <div class="monster-hint">點擊小怪獸幫他變身！</div>
+                </div>`;
+        } else {
+            monsterArea.innerHTML = '';
+        }
+
+        // 卡片光暈
+        document.getElementById('fortune-card').className = `fortune-card glow-${f.level}`;
+
+        // 心動背景
+        const rs = document.getElementById('result-screen');
+        f.id <= 8 ? rs.classList.add('heart-bg') : rs.classList.remove('heart-bg');
+
+        showScreen('result-screen');
+
+        // 等級特效（稍微延遲讓卡片先出現）
+        setTimeout(() => {
+            if (f.level === '大吉') { fxConfetti(); fxCardShake(); }
+            else if (f.level === '中吉') { fxStars(); }
+            else if (f.level === '小吉') { fxSparkles(); }
+
+            if (f.id <= 8) { fxHearts(); fxPinkOverlay(); }
+        }, 600);
+    }
+
+    const LEVEL_TEXT = {
+        '大吉': '⭐⭐⭐⭐⭐ 五星爆棚 大吉',
+        '中吉': '⭐⭐⭐ 三星報喜 中吉',
+        '小吉': '⭐ 一星好運 小吉',
+        '末吉': '💧 能量補給 末吉',
+    };
+
+    const CAT_TEXT = {
+        '心動': '💕 心動',
+        '學業': '📚 學業',
+        '校園': '🏫 校園',
+        '人際': '🤝 人際',
+    };
+
+    /* ── 啟動能量 ── */
+    function activateEnergy() {
+        const f = currentFortune;
+        const isStrong = f.action_type === 'strong';
+        const ac = document.getElementById('action-content');
+        document.getElementById('action-label').textContent = isStrong ? '⚡ 強運秘訣' : '🌀 改運任務';
+        document.getElementById('action-text').textContent = f.action_content;
+        ac.className = `action-content ${isStrong ? 'action-strong' : 'action-quest'}`;
+        ac.style.display = 'block';
+        document.getElementById('activate-btn').style.display = 'none';
+    }
+
+    /* ── 末吉怪獸變身 ── */
+    function transformMonster() {
+        const m = document.getElementById('monster');
+        if (!m || m.dataset.transformed) return;
+        m.dataset.transformed = '1';
+        m.textContent = '💪';
+        m.classList.add('warrior');
+        m.onclick = null;
+        m.nextElementSibling.textContent = '✨ 變身成功！你也可以的！';
+    }
+
+    /* ── 回首頁 ── */
+    function resetToHome() {
+        clearFx();
+        showScreen('home-screen');
+    }
+
+    /* ════════════════════════════
+       特效函式
+    ════════════════════════════ */
+    const fx = document.getElementById('fx');
+
+    function clearFx() {
+        fx.innerHTML = '';
+    }
+
+    function fxConfetti() {
+        const colors = ['#FFD700','#FF6B6B','#4ECDC4','#45B7D1','#f093fb','#a29bfe','#fd79a8'];
+        for (let i = 0; i < 70; i++) {
+            const el = document.createElement('div');
+            el.className = 'confetti';
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            el.style.width  = (Math.random() * 8 + 5) + 'px';
+            el.style.height = (Math.random() * 8 + 5) + 'px';
+            if (Math.random() > 0.5) el.style.borderRadius = '50%';
+            const dur   = (Math.random() * 2   + 1.5) + 's';
+            const delay = (Math.random() * 0.8) + 's';
+            el.style.animation = `confettiFall ${dur} ease ${delay} forwards`;
+            fx.appendChild(el);
+        }
+        setTimeout(clearFx, 5000);
+    }
+
+    function fxCardShake() {
+        const card = document.getElementById('fortune-card');
+        card.classList.remove('card-shake');
+        void card.offsetWidth;
+        card.classList.add('card-shake');
+        setTimeout(() => card.classList.remove('card-shake'), 500);
+    }
+
+    function fxStars() {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const emojis = ['⭐','✨','🌟','🍊'];
+        for (let i = 0; i < 14; i++) {
+            const el = document.createElement('div');
+            el.className = 'star';
+            el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            el.style.left = cx + 'px';
+            el.style.top  = cy + 'px';
+            el.style.fontSize = (Math.random() * 1.2 + 1) + 'rem';
+            const angle    = (i / 14) * 360;
+            const distance = 140 + Math.random() * 100;
+            el.style.setProperty('--dx', Math.cos(angle * Math.PI / 180) * distance + 'px');
+            el.style.setProperty('--dy', Math.sin(angle * Math.PI / 180) * distance + 'px');
+            el.style.animation = `starBurst 1.3s ease-out ${Math.random() * 0.3}s forwards`;
+            fx.appendChild(el);
+        }
+        setTimeout(() => document.querySelectorAll('.star').forEach(e => e.remove()), 2200);
+    }
+
+    function fxSparkles() {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const emojis = ['✨','🌿','💚','🍀'];
+        for (let i = 0; i < 12; i++) {
+            const el = document.createElement('div');
+            el.className = 'sparkle';
+            el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            el.style.left     = (cx + (Math.random() - 0.5) * 200) + 'px';
+            el.style.top      = (cy + (Math.random() - 0.5) * 200) + 'px';
+            el.style.fontSize = (Math.random() * 1.2 + 0.9) + 'rem';
+            el.style.setProperty('--dx', (Math.random() - 0.5) * 220 + 'px');
+            el.style.setProperty('--dy', (Math.random() - 0.5) * 220 + 'px');
+            el.style.animation = `sparklePop 1.5s ease-out ${Math.random() * 0.4}s forwards`;
+            fx.appendChild(el);
+        }
+        setTimeout(() => document.querySelectorAll('.sparkle').forEach(e => e.remove()), 2500);
+    }
+
+    function fxHearts() {
+        const emojis = ['💕','💖','💗','💝','🩷','💓'];
+        for (let i = 0; i < 22; i++) {
+            const el = document.createElement('div');
+            el.className = 'heart';
+            el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            el.style.left     = Math.random() * 100 + 'vw';
+            el.style.fontSize = (Math.random() * 1.6 + 1) + 'rem';
+            const dur   = (Math.random() * 3 + 3) + 's';
+            const delay = (Math.random() * 2) + 's';
+            el.style.animation = `heartRise ${dur} ease-in ${delay} forwards`;
+            fx.appendChild(el);
+        }
+        setTimeout(() => document.querySelectorAll('.heart').forEach(e => e.remove()), 8000);
+    }
+
+    function fxPinkOverlay() {
+        if (document.querySelector('.pink-overlay')) return;
+        const el = document.createElement('div');
+        el.className = 'pink-overlay';
+        fx.appendChild(el);
+    }
+
+    /* ── Init ── */
+    loadFortunes();
+</script>
+</body>
+</html>
