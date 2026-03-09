@@ -197,15 +197,36 @@
         .glow-小吉 { box-shadow: 0 20px 60px rgba(76,175,80,.3); }
         .glow-末吉 { box-shadow: 0 20px 60px rgba(100,181,246,.3); }
 
-        /* 等級徽章 */
+        /* 等級大標題 */
+        .level-title {
+            font-size: 2.6rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 6px;
+            letter-spacing: 4px;
+        }
+        .level-title-大吉 { color: #FFA500; text-shadow: 0 2px 8px rgba(255,165,0,.4); }
+        .level-title-中吉 { color: #FF9800; text-shadow: 0 2px 8px rgba(255,152,0,.35); }
+        .level-title-小吉 { color: #4CAF50; text-shadow: 0 2px 8px rgba(76,175,80,.3); }
+        .level-title-末吉 { color: #64B5F6; text-shadow: 0 2px 8px rgba(100,181,246,.3); }
+
+        /* 星星＋類別列 */
+        .card-sub-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        /* 等級徽章（星星描述） */
         .level-badge {
             display: inline-flex;
             align-items: center;
-            padding: 7px 20px;
+            padding: 5px 16px;
             border-radius: 50px;
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: 700;
-            margin-bottom: 8px;
         }
         .level-大吉 { background: linear-gradient(135deg,#FFD700,#FFA500); color: #4a2e00; }
         .level-中吉 { background: linear-gradient(135deg,#FFB347,#FF9800); color: #4a2200; }
@@ -216,14 +237,12 @@
         .category-tag {
             display: inline-flex;
             align-items: center;
-            padding: 4px 12px;
+            padding: 5px 14px;
             border-radius: 50px;
-            font-size: 0.78rem;
+            font-size: 0.9rem;
             font-weight: 600;
             background: #ede7f6;
             color: #6a1b9a;
-            margin-left: 8px;
-            margin-bottom: 8px;
         }
 
         .fortune-id {
@@ -258,48 +277,30 @@
             margin-bottom: 20px;
         }
 
-        /* 啟動能量按鈕 */
-        .activate-btn {
-            font-family: inherit;
-            font-size: 1.05rem;
+        /* 今日幸運色 */
+        .lucky-color-section {
+            margin-top: 18px;
+            text-align: center;
+        }
+        .lucky-color-label {
+            font-size: 0.85rem;
             font-weight: 700;
-            color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 50px;
-            padding: 14px;
-            cursor: pointer;
-            width: 100%;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 6px 20px rgba(102,126,234,.4);
+            color: #999;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
         }
-        .activate-btn:hover  { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(102,126,234,.55); }
-        .activate-btn:active { transform: translateY(0); }
-
-        /* 能量指令 */
-        .action-content {
-            display: none;
-            border-radius: 14px;
-            padding: 16px;
-            margin-top: 16px;
-            font-size: 0.93rem;
-            font-weight: 500;
-            line-height: 1.75;
-            animation: slideDown 0.4s ease;
+        .lucky-color-swatch {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,.15);
+            border: 4px solid white;
         }
-        .action-strong { background: linear-gradient(135deg,#fff9c4,#ffe082); color: #5a3e00; }
-        .action-quest  { background: linear-gradient(135deg,#e1f5fe,#b3e5fc); color: #01579b; }
-
-        .action-label {
-            font-size: 0.82rem;
-            font-weight: 900;
-            margin-bottom: 6px;
-            letter-spacing: 1px;
-        }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to   { opacity: 1; transform: translateY(0); }
+        .lucky-color-name {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #555;
         }
 
         /* 再抽 */
@@ -463,16 +464,17 @@
         <div class="card-shimmer"></div>
         <div id="monster-area"></div>
         <div class="fortune-id" id="fortune-id"></div>
-        <div>
+        <div class="level-title" id="level-title"></div>
+        <div class="card-sub-row">
             <span class="level-badge" id="level-badge"></span>
             <span class="category-tag" id="category-tag"></span>
         </div>
         <div class="poem" id="poem"></div>
         <div class="meaning" id="meaning"></div>
-        <button class="activate-btn" id="activate-btn" onclick="activateEnergy()">⚡ 啟動能量</button>
-        <div class="action-content" id="action-content">
-            <div class="action-label" id="action-label"></div>
-            <div id="action-text"></div>
+        <div class="lucky-color-section">
+            <div class="lucky-color-label">🎨 今日幸運色</div>
+            <div class="lucky-color-swatch" id="lucky-color-swatch"></div>
+            <div class="lucky-color-name" id="lucky-color-name"></div>
         </div>
     </div>
     <button class="draw-again-btn" onclick="resetToHome()">🔄 再抽一次</button>
@@ -537,6 +539,10 @@
         // 填入卡片內容
         document.getElementById('fortune-id').textContent = `# ${String(f.id).padStart(2, '0')}`;
 
+        const title = document.getElementById('level-title');
+        title.textContent = f.level;
+        title.className = `level-title level-title-${f.level}`;
+
         const badge = document.getElementById('level-badge');
         badge.textContent = LEVEL_TEXT[f.level];
         badge.className = `level-badge level-${f.level}`;
@@ -549,12 +555,8 @@
         poem.className = `poem poem-${f.level}`;
 
         document.getElementById('meaning').textContent = f.meaning;
+        setLuckyColor(f);
 
-        // 重置能量區塊
-        document.getElementById('activate-btn').style.display = 'block';
-        const ac = document.getElementById('action-content');
-        ac.style.display = 'none';
-        ac.className = 'action-content';
 
         // 末吉怪獸
         const monsterArea = document.getElementById('monster-area');
@@ -588,10 +590,10 @@
     }
 
     const LEVEL_TEXT = {
-        '大吉': '⭐⭐⭐⭐⭐ 五星爆棚 大吉',
-        '中吉': '⭐⭐⭐ 三星報喜 中吉',
-        '小吉': '⭐ 一星好運 小吉',
-        '末吉': '💧 能量補給 末吉',
+        '大吉': '⭐⭐⭐⭐⭐ 五星爆棚',
+        '中吉': '⭐⭐⭐ 三星報喜',
+        '小吉': '⭐ 一星好運',
+        '末吉': '💧 能量補給',
     };
 
     const CAT_TEXT = {
@@ -601,16 +603,35 @@
         '人際': '🤝 人際',
     };
 
-    /* ── 啟動能量 ── */
-    function activateEnergy() {
-        const f = currentFortune;
-        const isStrong = f.action_type === 'strong';
-        const ac = document.getElementById('action-content');
-        document.getElementById('action-label').textContent = isStrong ? '⚡ 強運秘訣' : '🌀 改運任務';
-        document.getElementById('action-text').textContent = f.action_content;
-        ac.className = `action-content ${isStrong ? 'action-strong' : 'action-quest'}`;
-        ac.style.display = 'block';
-        document.getElementById('activate-btn').style.display = 'none';
+    /* ── 今日幸運色 ── */
+    const LUCKY_COLORS = {
+        '大吉': [
+            { name: '金燦黃', hex: '#FFD700' },
+            { name: '珊瑚紅', hex: '#FF6B6B' },
+            { name: '玫瑰粉', hex: '#FFB7C5' },
+        ],
+        '中吉': [
+            { name: '蜜橙', hex: '#FF9800' },
+            { name: '薰衣草紫', hex: '#B39DDB' },
+            { name: '天空藍', hex: '#87CEEB' },
+        ],
+        '小吉': [
+            { name: '嫩草綠', hex: '#81C784' },
+            { name: '檸檬黃', hex: '#FFF176' },
+            { name: '薄荷綠', hex: '#A5D6A7' },
+        ],
+        '末吉': [
+            { name: '霧霾藍', hex: '#90CAF9' },
+            { name: '粉丁香', hex: '#CE93D8' },
+            { name: '奶油白', hex: '#FFF8E1' },
+        ],
+    };
+
+    function setLuckyColor(f) {
+        const colors = LUCKY_COLORS[f.level];
+        const color = colors[f.id % colors.length];
+        document.getElementById('lucky-color-swatch').style.background = color.hex;
+        document.getElementById('lucky-color-name').textContent = color.name;
     }
 
     /* ── 末吉怪獸變身 ── */
