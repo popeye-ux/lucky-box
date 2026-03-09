@@ -573,7 +573,7 @@
 
         // 心動背景
         const rs = document.getElementById('result-screen');
-        f.id <= 8 ? rs.classList.add('heart-bg') : rs.classList.remove('heart-bg');
+        f.category === '心動' ? rs.classList.add('heart-bg') : rs.classList.remove('heart-bg');
 
         showScreen('result-screen');
 
@@ -583,7 +583,7 @@
             else if (f.level === '中吉') { fxStars(); }
             else if (f.level === '小吉') { fxSparkles(); }
 
-            if (f.id <= 8) { fxHearts(); fxPinkOverlay(); }
+            if (f.category === '心動') { fxHearts(); fxPinkOverlay(); }
         }, 600);
     }
 
